@@ -60,7 +60,7 @@ main{max-width:500px;margin:0 auto;padding:1.5rem 1rem 5rem;}
 .sk{color:var(--muted);font-family:'Space Mono',monospace;font-size:.68rem;}
 .sv{color:var(--w);font-weight:600;}
 .pl{max-height:240px;overflow-y:auto;margin-top:.5rem;}
-.pr{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr);font-size:.85rem;color:var(--w);}
+.pr{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr);font-size:.85rem;color:var(--w);flex-wrap:nowrap;}
 .pn{color:var(--dim);font-family:'Space Mono',monospace;font-size:.65rem;min-width:20px;}
 #toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--dark);border:2px solid var(--w);padding:10px 20px;border-radius:8px;font-size:.8rem;color:var(--w);font-family:'Space Mono',monospace;opacity:0;transition:opacity .25s;pointer-events:none;z-index:100;white-space:nowrap;}
 #toast.show{opacity:1;}
@@ -304,12 +304,15 @@ function updateUI() {
 
   var alist = document.getElementById('a-list');
   if (alist) {
-    if (pList.length === 0) {
+    var pEntries = Object.entries(lastData.participants);
+    if (pEntries.length === 0) {
       alist.innerHTML = '<div style="color:var(--dim);font-size:.8rem;font-style:italic">Ninguno a\u00fan</div>';
     } else {
-      alist.innerHTML = pList.map(function(p, i){
+      alist.innerHTML = pEntries.map(function(entry, i){
+        var key = entry[0]; var p = entry[1];
         var num = ('0' + (i+1)).slice(-2);
-        return '<div class="pr"><span class="pn">' + num + '</span><span>' + (p.emoji||'') + '</span><span>' + (p.nombreArtistico||p.nombre||'') + '</span><span style="color:var(--dim);font-size:.75rem;margin-left:auto">' + (p.nombreCompleto||'') + '</span></div>';
+        var safeName = (p.nombreArtistico||p.nombre||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return '<div class="pr"><span class="pn">' + num + '</span><span>' + (p.emoji||'') + '</span><span>' + (p.nombreArtistico||p.nombre||'') + '</span><span style="color:var(--dim);font-size:.75rem;margin-left:auto">' + (p.nombreCompleto||'') + '</span><button onclick="eliminarInscrito(\'' + key + '\',\'' + safeName + '\')" style="margin-left:8px;background:transparent;border:none;cursor:pointer;font-size:.85rem;color:#ff4444;padding:2px 6px;border-radius:4px;line-height:1" title="Eliminar inscrito">&#128465;</button></div>';
       }).join('');
     }
   }
@@ -372,6 +375,14 @@ function adminReset() {
     show('lineup-wait');
     poll();
     toast('Reiniciado');
+  });
+}
+
+function eliminarInscrito(key, nombre) {
+  if (!confirm('¿Eliminar a "' + nombre + '" de la lista?')) return;
+  fbDelete('/ventana/participants/' + key).then(function() {
+    poll();
+    toast('Inscrito eliminado');
   });
 }
 
